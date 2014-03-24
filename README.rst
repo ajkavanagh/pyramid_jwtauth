@@ -39,9 +39,9 @@ include it in the Authorization header like so::
 (NB depending on the number of claims in the JWT the token can get large.
 For all practical purposes, it should be kept short.)
 
-This plugin uses the python-jwt library for verifying JWTs:
+This plugin uses the PyJWT library for verifying JWTs:
 
-    https://github.com/davedoesdev/python-jwt
+    http://github.com/progrium/pyjwt
 
 Also see the library for generating the JWT for the client in the first place
 although any language can be used to generate it.
@@ -65,6 +65,7 @@ This module is *heavily* based on (and copied from) the Mozilla Services
 pyramid_macauth package and macauthlib package:
 
 	https://github.com/mozilla-services/pyramid_macauth
+
     https://github.com/mozilla-services/macauthlib
 
 Without it, I would not have been able to make the small number of
