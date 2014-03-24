@@ -46,17 +46,6 @@ This plugin uses the PyJWT library for verifying JWTs:
 Also see the library for generating the JWT for the client in the first place
 although any language can be used to generate it.
 
-e.g. with python-jwt
-
-.. code:: python
-
-	import jwt, Crypto.PublicKey.RSA as RSA, datetime
-	key = RSA.generate(2048)
-	payload = { 'foo': 'bar', 'wup': 90 };
-	token = jwt.generate_jwt(payload, key, 'PS256', datetime.timedelta(minutes=5))
-	header, claims = jwt.verify_jwt(token, key)
-	for k in payload: assert claims[k] == payload[k]
-
 -----------
 Inspiration
 -----------
