@@ -1,0 +1,16 @@
+List of contributors of pyramid_jwtauth:
+
+* Alex Kavanagh <alex@ajkavanagh.co.uk>
+
+
+List of contributors of pyramid_macauth at time of code reuse:
+(https://github.com/mozilla-services/pyramid_macauth)
+
+* Ryan Kelly <rfkelly@mozilla.com>
+
+
+List of contributors of macauthlib at time of code reuse:
+(https://github.com/mozilla-services/macauthlib):
+
+* Ryan Kelly <rfkelly@mozilla.com>
+* Bobby R. Ward <bobbyrward@gmail.com>
