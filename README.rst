@@ -65,6 +65,7 @@ This module is *heavily* based on (and copied from) the Mozilla Services
 pyramid_macauth package and macauthlib package:
 
     https://github.com/mozilla-services/pyramid_macauth
+
     https://github.com/mozilla-services/macauthlib
 
 Without it, I would not have been able to make the small number of
