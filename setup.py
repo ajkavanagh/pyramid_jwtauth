@@ -11,10 +11,10 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
 # TODO: fix the imports.
-requires = ['pyramid >= 1.3', 'macauthlib >= 0.3.0', 'tokenlib', 'webtest']
+requires = ['pyramid >= 1.3', 'webtest']
 
 setup(name='pyramid_jwtauth',
-      version='0.0.1.dev1',
+      version='0.0.1.dev2',
       description='pyramid_jwtauth',
       long_description=README + '\n\n' + CHANGES,
       license='MPLv2.0',
