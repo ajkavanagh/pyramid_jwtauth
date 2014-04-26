@@ -30,6 +30,7 @@ import pyramid_jwtauth.utils
 
 MASTER_SECRET = "V8 JUICE IS 1/8TH GASOLINE"
 
+
 def make_request(config, path="/", environ={}):
     """Helper function for making pyramid Request objects."""
     my_environ = {}
@@ -88,7 +89,6 @@ def stub_view_groups(request):
     groups = effective_principals(request)
     return Response(json.dumps([str(g) for g in groups]))
 
-
 def stub_decode_mac_id(request, id, suffix="-SECRET"):
     """Stub mac-id-decoding function that appends suffix to give the secret."""
     return id, id + suffix
@@ -97,6 +97,20 @@ def stub_decode_mac_id(request, id, suffix="-SECRET"):
 def stub_encode_mac_id(request, id, suffix="-SECRET"):
     """Stub mac-id-encoding function that appends suffix to give the secret."""
     return id, id + suffix
+
+def make_claims(userid, claims=None):
+    if claims is None:
+        claims = {}
+    if 'sub' not in claims:
+        claims['sub'] = userid
+    now = datetime.datetime.utcnow()
+    if 'iat' not in claims:
+        claims['iat'] = now
+    if 'nbf' not in claims:
+        claims['nbf'] = now
+    if 'exp' not in claims:
+        claims['exp'] = now + datetime.timedelta(seconds=10)
+    return claims
 
 
 class TestJWTAuthenticationPolicy(unittest.TestCase):
@@ -135,29 +149,11 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
             del kwds['claims']
         req = self._make_request(*args, **kwds)
         # creds = self._get_credentials(req, userid=userid)
-        claims = self._make_claims(userid=userid, claims=claims)
+        claims = make_claims(userid=userid, claims=claims)
         # jwt_authenticate_request(req, **creds)
-        headers = jwt_authenticate_request(req, claims, MASTER_SECRET)
+        # note jwt_authenticate_request() returns headers if wanted
+        jwt_authenticate_request(req, claims, MASTER_SECRET)
         return req
-
-    # todo: need to do something with this.
-    def _get_credentials(self, req, **data):
-        id, key = self.policy.encode_mac_id(req, **data)
-        return {"id": id, "key": key}
-
-    def _make_claims(self, userid, claims=None):
-        if claims is None:
-            claims = {}
-        if 'sub' not in claims:
-            claims['sub'] = userid
-        now = datetime.datetime.utcnow()
-        if 'iat' not in claims:
-            claims['iat'] = now
-        if 'nbf' not in claims:
-            claims['nbf'] = now
-        if 'exp' not in claims:
-            claims['exp'] = now + datetime.timedelta(seconds=10)
-        return claims
 
     def test_the_class_implements_auth_policy_interface(self):
         verifyClass(IAuthenticationPolicy, JWTAuthenticationPolicy)
@@ -370,7 +366,7 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
         r = self.app.request(req, status=200)
         self.assertEqual(r.body, b"baduser")
 
-    def test_groupfinder_gruops_are_correctly_reported(self):
+    def test_groupfinder_groups_are_correctly_reported(self):
         req = self._make_request("/groups")
         r = self.app.request(req)
         self.assertEqual(r.json,
@@ -430,3 +426,54 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
         req = self._make_authenticated_request("test@moz.com", "/public")
         self.assertEqual(authenticated_userid(req), "test@moz.com")
         self.assertEqual(authenticated_userid(req), "test@moz.com")
+
+
+class TestJWTAuthenticationPolicy_with_RSA(unittest.TestCase):
+    """Testcases for the JWTAuthenticationPolicy class."""
+
+    def setUp(self):
+        self.config = Configurator(settings={
+          "jwtauth.private_key_file": 'pyramid_jwtauth/tests/testkey',
+          "jwtauth.public_key_file": 'pyramid_jwtauth/tests/testkey.pub',
+          "jwtauth.algorithm": "RS256",
+        })
+        self.config.include("pyramid_jwtauth")
+        self.config.add_route("public", "/public")
+        self.config.add_view(stub_view_public, route_name="public")
+        self.config.add_route("auth", "/auth")
+        self.config.add_view(stub_view_auth, route_name="auth")
+        self.config.add_route("groups", "/groups")
+        self.config.add_view(stub_view_groups, route_name="groups")
+        self.app = TestApp(self.config.make_wsgi_app())
+        self.policy = self.config.registry.queryUtility(IAuthenticationPolicy)
+
+    def _make_request(self, *args, **kwds):
+        return make_request(self.config, *args, **kwds)
+
+    def test_from_settings_with_RSA_public_private_key(self):
+        self.assertEqual(self.policy.algorithm, 'RS256')
+        self.assertEqual(self.policy.master_secret, None)
+        from Crypto.PublicKey import RSA
+        with open('pyramid_jwtauth/tests/testkey', 'r') as rsa_priv_file:
+            private_key = RSA.importKey(rsa_priv_file.read())
+            self.assertEqual(self.policy.private_key, private_key)
+        with open('pyramid_jwtauth/tests/testkey.pub', 'r') as rsa_pub_file:
+            public_key = RSA.importKey(rsa_pub_file.read())
+            self. assertEqual(self.policy.public_key, public_key)
+
+        self.assertNotEqual(private_key, public_key)
+        req = self._make_request("/auth")
+        claims = make_claims(userid="test@moz.com")
+        jwt_authenticate_request(req, claims, private_key, 'RS256')
+
+        token = pyramid_jwtauth.utils.parse_authz_header(req)["token"]
+        userid = self.policy.authenticated_userid(req)
+        self.assertEqual(userid, "test@moz.com")
+
+        import jwt
+        payload = jwt.decode(token, key=public_key, verify=True)
+        self.assertIn('sub', payload)
+        self.assertEqual(payload['sub'], "test@moz.com")
+
+        r = self.app.request(req)
+        self.assertEqual(r.body, b"test@moz.com")

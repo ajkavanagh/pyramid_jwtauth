@@ -14,7 +14,7 @@ from __future__ import absolute_import
 __ver_major__ = 0
 __ver_minor__ = 0
 __ver_patch__ = 1
-__ver_sub__ = ".dev2"
+__ver_sub__ = ".dev3"
 __ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 __version__ = "%d.%d.%d%s" % __ver_tuple__
 
@@ -23,6 +23,7 @@ import functools
 
 from datetime import datetime
 from calendar import timegm
+from Crypto.PublicKey import RSA
 
 from zope.interface import implementer
 
@@ -52,7 +53,14 @@ class JWTAuthenticationPolicy(object):
 
         * master_secret:  a secret known only by the server, used for signing
                           JWT auth tokens in the default implementation.
-                          This can also be an Cypto.PublicKey.RSA key.
+
+        * private_key:  An RSA private_key
+        * private_key_file: a file holding an RSA encoded (PEM/DER) key file.
+
+        * public_key:  An RSA public_key
+        * public_key_file: a file holding an RSA encoded (PEM/DER) key file.
+
+        * algorithm:  The algorithm used to sign the key (defaults to HS256)
 
         * leeway:  The default leeway (as a datetime.timedelta). Defaults to
                    None
@@ -61,18 +69,38 @@ class JWTAuthenticationPolicy(object):
                            this is the 'sub' claim of the JWT, but this can
                            be overridden here.  This is used in
                            authenticated_userid() and related functions.
+
+    The library takes either a master_secret or private_key/public_key pair.
+    In the later case the algorithm must be an RS* version.
     """
 
     # The default value of master_secret is None, which will cause the library
     # to generate a fresh secret at application startup.
     master_secret = None
 
-    def __init__(self, find_groups=None, master_secret=None, leeway=None,
+    def __init__(self,
+                 find_groups=None,
+                 master_secret=None,
+                 private_key=None,
+                 private_key_file=None,
+                 public_key=None,
+                 public_key_file=None,
+                 algorithm='HS256',
+                 leeway=None,
                  userid_in_claim=None):
         if find_groups is not None:
             self.find_groups = find_groups
         if master_secret is not None:
             self.master_secret = master_secret
+        self.private_key = private_key
+        if private_key_file is not None:
+            with open(private_key_file, 'r') as rsa_priv_file:
+                self.private_key = RSA.importKey(rsa_priv_file.read())
+        self.public_key = public_key
+        if public_key_file is not None:
+            with open(public_key_file, 'r') as rsa_pub_file:
+                self.public_key = RSA.importKey(rsa_pub_file.read())
+        self.algorithm = algorithm
         if leeway is not None:
             self.leeway = leeway
         else:
@@ -124,6 +152,11 @@ class JWTAuthenticationPolicy(object):
         kwds = {}
         kwds["find_groups"] = load_function("find_groups", settings)
         kwds["master_secret"] = settings.pop("master_secret", None)
+        kwds["private_key"] = settings.pop("private_key", None)
+        kwds["private_key_file"] = settings.pop("private_key_file", None)
+        kwds["public_key"] = settings.pop("public_key", None)
+        kwds["public_key_file"] = settings.pop("public_key_file", None)
+        kwds["algorithm"] = settings.pop("algorithm", "HS256")
         kwds["leeway"] = settings.pop("leeway", 0)
         kwds["userid_in_claim"] = settings.pop("userid_in_claim", "sub")
         return kwds
@@ -221,27 +254,42 @@ class JWTAuthenticationPolicy(object):
             DecodeError() - if the algorithm in the token isn't supported.
             DecodeError() - if the secret doesn't match (key, etc.)
             ExpiredSignature() - if the 'exp' claim has expired.
+
+        If private_key/public key is set then the public_key will be used to
+        decode the key.
         """
         if leeway is None:
             leeway = self.leeway
-        # print(type(self.master_secret), self.master_secret)
+        if self.public_key is not None:
+            key = self.public_key
+        else:
+            key = self.master_secret
         claims = jwt.decode(jwtauth_token,
-                            key=self.master_secret,
+                            key=key,
                             leeway=leeway,
                             verify=verify)
         return claims
 
-    def encode_jwt(self, request, claims, key=None, algorithm='HS256'):
+    def encode_jwt(self, request, claims, key=None, algorithm=None):
         """Encode a set of claims into a JWT token.
 
         This is just a proxy for jwt.encode() but uses the default
         master_secret that may have been set in configuring the library.
+
+        If the private_key is set then self.private_key is used for the encode
+        (assuming key = None!)  algorithm also has to be an RS* algorithm and
+        if not set, then self.algorithm is used.
         """
         if key is None:
-            key = self.master_secret
+            if self.private_key is not None:
+                key = self.private_key
+            else:
+                key = self.master_secret
+        if algorithm is None:
+            algorithm = self.algorithm
         # fix for older version of PyJWT which doesn't covert all of the time
         # claims.  This won't be needed in the future.
-        encode_claims = _maybe_encode_time_claims(claims)
+        encode_claims = maybe_encode_time_claims(claims)
 
         jwtauth_token = jwt.encode(encode_claims, key=key, algorithm=algorithm)
         return jwtauth_token
@@ -352,7 +400,7 @@ class JWTAuthenticationPolicy(object):
         raise self.challenge(request, msg)
 
 
-def _maybe_encode_time_claims(claims):
+def maybe_encode_time_claims(claims):
     encode_claims = claims.copy()
     # convert datetime to a intDate value in known time-format claims
     for time_claim in ['exp', 'iat', 'nbf']:
@@ -371,7 +419,7 @@ def authenticate_request(request, claims, key, algorithm='HS256'):
     making the request - so this is just useful as a 'canonical' way of
     creating a Authorization header
     """
-    claims = _maybe_encode_time_claims(claims)
+    claims = maybe_encode_time_claims(claims)
     jwtauth_token = jwt.encode(claims, key=key, algorithm=algorithm)
     if sys.version_info >= (3, 0, 0):
         jwtauth_token = jwtauth_token.decode(encoding='UTF-8')
@@ -460,4 +508,6 @@ def includeme(config):
     config.set_authentication_policy(authn_policy)
 
     # Set the forbidden view to use the challenge() method on the policy.
-    config.add_forbidden_view(authn_policy.challenge)
+    # The following causes a problem with cornice (fighting - open to options
+    # about them playing properly together.)
+    # config.add_forbidden_view(authn_policy.challenge)
