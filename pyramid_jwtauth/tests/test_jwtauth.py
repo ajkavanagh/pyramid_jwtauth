@@ -361,7 +361,7 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
 
     def test_groupfinder_can_block_authentication(self):
         req = self._make_authenticated_request("baduser", "/auth")
-        r = self.app.request(req, status=401)
+        r = self.app.request(req, status=403)
         req = self._make_authenticated_request("baduser", "/public")
         r = self.app.request(req, status=200)
         self.assertEqual(r.body, b"baduser")

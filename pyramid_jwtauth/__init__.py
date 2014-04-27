@@ -169,9 +169,9 @@ class JWTAuthenticationPolicy(object):
         callback to check the validity of the claimed identity.
         """
         userid = self._get_credentials(request)
+        self._check_signature(request)
         if userid is None:
             return None
-        self._check_signature(request)
         if self.find_groups(userid, request) is None:
             return None
         return userid
@@ -316,13 +316,12 @@ class JWTAuthenticationPolicy(object):
     def _get_credentials(self, request):
         """Extract the JWTAuth claims from the request.
 
-        This method extracts and returns the claimed userid from the MACAuth
+        This method extracts and returns the claimed userid from the JWTAuth
         data in the request, along with the corresonding request signing
         key.  It does *not* check the signature on the request.
 
-        If there are no MACAuth credentials in the request then None
-        is returned.  If the MACAuth token id is invalid then HTTPUnauthorized
-        will be raised.
+        If there are no JWTAuth credentials in the request then None
+        is returned.
         """
         userid = request.environ.get("jwtauth.userid", False)
         if userid:
@@ -383,6 +382,8 @@ class JWTAuthenticationPolicy(object):
         It was already checked in _get_credentials() - this function just
         sees if it was valid.
 
+        If the JWTAuth token id is invalid then HTTPUnauthorized
+        will be raised.
         """
         # See if we've already checked the signature on this request.
         # This is important because pyramid doesn't cache the results

@@ -4,3 +4,9 @@ PENDING
 * Initial dev version 0.0.1.dev1.
 
 Forked from https://github.com/mozilla-services/pyramid_macauth version 0.4.0-dev1
+
+0.0.1.dev3
+
+Now works properly with RSA keys and fixed issue with not doing a 401 with
+the appropriate challenge.
+Dropped support for Python 2.6 and 3.2
