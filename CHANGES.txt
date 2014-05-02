@@ -5,6 +5,14 @@ PENDING
 
 Forked from https://github.com/mozilla-services/pyramid_macauth version 0.4.0-dev1
 
+0.0.1.dev5
+
+Updated package requires to need PyJWT.
+
+0.0.1.dev4
+
+Updated package so that it can be downloaded for use by Python 3.3/3.4
+
 0.0.1.dev3
 
 Now works properly with RSA keys and fixed issue with not doing a 401 with
