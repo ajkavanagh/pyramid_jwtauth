@@ -1,5 +1,6 @@
 *.pyc
 *.egg-info
+*.egg
 *.swp
 .coverage
 *~
@@ -7,3 +8,5 @@ build
 dist
 htmlcov
 .tox
+.idea
+
