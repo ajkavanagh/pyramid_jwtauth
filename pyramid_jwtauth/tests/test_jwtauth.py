@@ -453,12 +453,12 @@ class TestJWTAuthenticationPolicy_with_RSA(unittest.TestCase):
     def test_from_settings_with_RSA_public_private_key(self):
         self.assertEqual(self.policy.algorithm, 'RS256')
         self.assertEqual(self.policy.master_secret, None)
-        from Crypto.PublicKey import RSA
+        # from Crypto.PublicKey import RSA
         with open('pyramid_jwtauth/tests/testkey', 'r') as rsa_priv_file:
-            private_key = RSA.importKey(rsa_priv_file.read())
+            private_key = rsa_priv_file.read()
             self.assertEqual(self.policy.private_key, private_key)
         with open('pyramid_jwtauth/tests/testkey.pub', 'r') as rsa_pub_file:
-            public_key = RSA.importKey(rsa_pub_file.read())
+            public_key = rsa_pub_file.read()
             self. assertEqual(self.policy.public_key, public_key)
 
         self.assertNotEqual(private_key, public_key)

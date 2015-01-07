@@ -23,7 +23,6 @@ import functools
 
 from datetime import datetime
 from calendar import timegm
-from Crypto.PublicKey import RSA
 
 from zope.interface import implementer
 
@@ -95,11 +94,11 @@ class JWTAuthenticationPolicy(object):
         self.private_key = private_key
         if private_key_file is not None:
             with open(private_key_file, 'r') as rsa_priv_file:
-                self.private_key = RSA.importKey(rsa_priv_file.read())
+                self.private_key = rsa_priv_file.read()
         self.public_key = public_key
         if public_key_file is not None:
             with open(public_key_file, 'r') as rsa_pub_file:
-                self.public_key = RSA.importKey(rsa_pub_file.read())
+                self.public_key = rsa_pub_file.read()
         self.algorithm = algorithm
         if leeway is not None:
             self.leeway = leeway
