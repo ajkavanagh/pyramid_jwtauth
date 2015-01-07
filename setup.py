@@ -11,10 +11,10 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
 # TODO: fix the imports.
-requires = ['pyramid >= 1.3', 'webtest', 'pycrypto', 'PyJWT']
+requires = ['pyramid >= 1.3', 'webtest', 'cryptography', 'PyJWT  == 0.4.0']
 
 setup(name='pyramid_jwtauth',
-      version='0.0.1.dev5',
+      version='0.1.0',
       description='pyramid_jwtauth',
       long_description=README + '\n\n' + CHANGES,
       license='MPLv2.0',
