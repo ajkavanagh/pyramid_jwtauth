@@ -69,6 +69,10 @@ class JWTAuthenticationPolicy(object):
                            be overridden here.  This is used in
                            authenticated_userid() and related functions.
 
+        * scheme: The scheme name used in the ``Authorization`` header. JWT
+          implementations vary in their use of ``JWT`` (our default) or
+          ``Bearer``.
+
     The library takes either a master_secret or private_key/public_key pair.
     In the later case the algorithm must be an RS* version.
     """
@@ -86,7 +90,8 @@ class JWTAuthenticationPolicy(object):
                  public_key_file=None,
                  algorithm='HS256',
                  leeway=None,
-                 userid_in_claim=None):
+                 userid_in_claim=None,
+                 scheme='JWT'):
         if find_groups is not None:
             self.find_groups = find_groups
         if master_secret is not None:
@@ -108,6 +113,7 @@ class JWTAuthenticationPolicy(object):
             self.userid_in_claim = userid_in_claim
         else:
             self.userid_in_claim = 'sub'
+        self.scheme = scheme
 
     @classmethod
     def from_settings(cls, settings={}, prefix="jwtauth.", **extra):
@@ -219,7 +225,7 @@ class JWTAuthenticationPolicy(object):
         This simply issues a new WWW-Authenticate challenge, which should
         cause the client to forget any previously-provisioned credentials.
         """
-        return [("WWW-Authenticate", "JWT")]
+        return [("WWW-Authenticate", self.scheme)]
 
     def challenge(self, request, content="Unauthorized"):
         """Challenge the user for credentials.
@@ -307,7 +313,7 @@ class JWTAuthenticationPolicy(object):
         except KeyError:
             params = parse_authz_header(request, None)
             if params is not None:
-                if params.get("scheme").upper() != "JWT":
+                if params.get("scheme").upper() !=self.scheme:
                     params = None
             request.environ["jwtauth.params"] = params
             return params
@@ -411,7 +417,7 @@ def maybe_encode_time_claims(claims):
 
 
 @normalize_request_object
-def authenticate_request(request, claims, key, algorithm='HS256'):
+def authenticate_request(request, claims, key, algorithm='HS256', scheme='JWT'):
     """Authenticate a webob style request with the appropriate JWT token
 
     This creates the auth token using the claims and the key to ensure that
@@ -427,7 +433,7 @@ def authenticate_request(request, claims, key, algorithm='HS256'):
     params['token'] = jwtauth_token
     # Serialize the parameters back into the authz header, and return it.
     # WebOb has logic to do this that's not perfect, but good enough for us.
-    request.authorization = ('JWT', params)
+    request.authorization = (scheme, params)
     return request.headers['Authorization']
 
 
