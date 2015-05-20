@@ -1,6 +1,7 @@
 List of contributors of pyramid_jwtauth:
 
 * Alex Kavanagh <alex@ajkavanagh.co.uk>
+* Wichert Akkerman <wichert@wiggy.net>
 
 
 List of contributors of pyramid_macauth at time of code reuse:
