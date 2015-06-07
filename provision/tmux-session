@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -e
+
+if [ -z "$TMUX" ]; then
+
+	# make the SSH_AUTH_SOCK point to a local symlink
+	if [ ! -z "SSH_AUTH_SOCK" ]; then
+	  ln -sf "$SSH_AUTH_SOCK" "$HOME/.wrap_auth_sock"
+	fi
+	export SSH_AUTH_SOCK="$HOME/.wrap_auth_sock"
+
+	# create a new tmux background session
+	PID=$(echo -n $(pidof tmux))
+	if [ -z "$PID" ]; then
+		tmux new-session -d -s session
+		SRC="/vagrant"
+		MAIN_CMD="cd $SRC"
+		VENV="$HOME/virtualenvs/pyramid-jwtauth"
+		VENV_CMD="cd $SRC && source $VENV/bin/activate"
+		tmux new-window -t session:1 -n 'main'
+		tmux send-keys -t session:1 "$MAIN_CMD" C-m
+		tmux new-window -t session:2 -n 'venv'
+		tmux send-keys -t session:2 "$VENV_CMD" C-m
+
+		tmux select-window -t session:1
+	fi
+
+	tmux -2 attach-session -t session
+fi
+exit 0

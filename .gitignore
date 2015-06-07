@@ -9,4 +9,5 @@ dist
 htmlcov
 .tox
 .idea
-
+.vagrant
+.eggs
