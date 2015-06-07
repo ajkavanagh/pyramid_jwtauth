@@ -240,10 +240,22 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
         self.assertEqual(headers[0][0], "WWW-Authenticate")
         self.assertTrue(headers[0][1] == "JWT")
 
+    def test_forget_gives_a_challenge_header_with_custom_scheme(self):
+        policy = JWTAuthenticationPolicy(scheme='Bearer')
+        req = self._make_authenticated_request("test@moz.com", "/")
+        headers = policy.forget(req)
+        self.assertTrue(headers[0][1] == "Bearer")
+
     def test_unauthenticated_requests_get_a_challenge(self):
         r = self.app.get("/auth", status=401)
         challenge = r.headers["WWW-Authenticate"]
         self.assertTrue(challenge.startswith("JWT"))
+
+    def test_unauthenticated_requests_get_a_challenge_custom_scheme(self):
+        self.policy.scheme = 'Bearer'
+        r = self.app.get("/auth", status=401)
+        challenge = r.headers["WWW-Authenticate"]
+        self.assertTrue(challenge.startswith('Bearer'))
 
     def test_authenticated_request_works(self):
         req = self._make_authenticated_request("test@moz.com", "/auth")
