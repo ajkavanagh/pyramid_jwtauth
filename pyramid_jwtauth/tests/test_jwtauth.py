@@ -489,3 +489,49 @@ class TestJWTAuthenticationPolicy_with_RSA(unittest.TestCase):
 
         r = self.app.request(req)
         self.assertEqual(r.body, b"test@moz.com")
+
+
+class TestJWTAuthenticationPolicyJWTOptions(unittest.TestCase):
+
+    def _make_request(self, *args, **kwds):
+        return make_request(self.config, *args, **kwds)
+
+    def setup_helper(self, config_settings):
+        self.config = Configurator(settings=config_settings)
+        self.config.include("pyramid_jwtauth")
+        # self.config.add_route("public", "/public")
+        # self.config.add_view(stub_view_public, route_name="public")
+        # self.config.add_route("auth", "/auth")
+        # self.config.add_view(stub_view_auth, route_name="auth")
+        # self.config.add_route("groups", "/groups")
+        # self.config.add_view(stub_view_groups, route_name="groups")
+        self.app = TestApp(self.config.make_wsgi_app())
+        self.policy = self.config.registry.queryUtility(IAuthenticationPolicy)
+
+
+    def test_decode_fails_no_override_on_aud_claim(self):
+        self.setup_helper({
+            "jwtauth.find_groups": "pyramid_jwtauth.tests.test_jwtauth:stub_find_groups",
+            "jwtauth.master_secret": MASTER_SECRET,})
+        # make a token with an audience claim
+        claims = make_claims('user1', claims={'aud': 'me'})
+        req = self._make_request("/auth")
+        jwt_authenticate_request(req, claims, MASTER_SECRET)
+        token = pyramid_jwtauth.utils.parse_authz_header(req)["token"]
+        from jwt.exceptions import InvalidAudienceError
+        with self.assertRaises(InvalidAudienceError):
+            userid = self.policy.authenticated_userid(req)
+        # self.assertEqual(userid, "test@moz.com")
+
+    def test_decode_passes_with_override_on_aud_claim(self):
+        self.setup_helper({
+            "jwtauth.find_groups": "pyramid_jwtauth.tests.test_jwtauth:stub_find_groups",
+            "jwtauth.master_secret": MASTER_SECRET,
+            "jwtauth.disable_verify_aud": True,})
+        # make a token with an audience claim
+        claims = make_claims('user1', claims={'aud': 'me'})
+        req = self._make_request("/auth")
+        jwt_authenticate_request(req, claims, MASTER_SECRET)
+        token = pyramid_jwtauth.utils.parse_authz_header(req)["token"]
+        userid = self.policy.authenticated_userid(req)
+        self.assertEqual(userid, "user1")

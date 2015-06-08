@@ -16,7 +16,7 @@ if [ -z "$TMUX" ]; then
 		tmux new-session -d -s session
 		SRC="/vagrant"
 		MAIN_CMD="cd $SRC"
-		VENV="$HOME/virtualenvs/pyramid-jwtauth"
+		VENV="$HOME/virtualenvs/pyramid_jwtauth"
 		VENV_CMD="cd $SRC && source $VENV/bin/activate"
 		tmux new-window -t session:1 -n 'main'
 		tmux send-keys -t session:1 "$MAIN_CMD" C-m

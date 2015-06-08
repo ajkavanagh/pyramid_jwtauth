@@ -29,3 +29,8 @@ Dropped support for Python 3.3 in tox, but it should still work fine.
 
 Addition (from development) perspective of using Vagrant to develop and
 tox-test the package against python 2.7 and 3.4
+
+0.1.2
+
+Added ability to disable various checks via the PyJWT options{} in the decode()
+method.  This is configured in the policy via the Pyramid setting system.
