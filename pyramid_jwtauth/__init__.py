@@ -194,6 +194,7 @@ class JWTAuthenticationPolicy(object):
         kwds["algorithm"] = settings.pop("algorithm", "HS256")
         kwds["leeway"] = settings.pop("leeway", 0)
         kwds["userid_in_claim"] = settings.pop("userid_in_claim", "sub")
+        kwds["scheme"] = settings.pop("scheme", "JWT")
         disable_options = {
             'verify_signature': settings.pop("disable_verify_signature", None),
             'verify_exp': settings.pop("disable_verify_exp", None),
