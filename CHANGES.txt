@@ -34,3 +34,8 @@ tox-test the package against python 2.7 and 3.4
 
 Added ability to disable various checks via the PyJWT options{} in the decode()
 method.  This is configured in the policy via the Pyramid setting system.
+
+0.1.3
+
+Merged PR#11 from Shadizzle to provide ability to configure 'scheme' from the
+INI file. Bumped version to 0.1.3.
