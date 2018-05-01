@@ -2,6 +2,9 @@
 pyramid_jwtauth
 ===============
 
+NOTE: I don't maintain this anymore; if you'd like to take over the repository then pease feel free
+to message me on twitter (@ajkavanagh).
+
 NOTE: This is an early version of the code is the library is likely to change.
 
 This is a Pyramid authenitcation plugin for JSON Web Token (JWT)
